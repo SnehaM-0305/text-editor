@@ -53,6 +53,31 @@ socket.on('mouse-move', (data) => {
     io.emit('mouse-move', data);
 });
 
+//lock status
+let documentLock = {
+    locked: false,
+    lockHolder: null,
+};
+
+socket.on('request-lock', (data) => {
+    if (!documentLock.locked) {
+        documentLock.locked = true;
+        documentLock.lockHolder = data.userId;
+        socket.emit('lock-status', { locked: true, lockHolder: data.userId });
+    } else {
+        socket.emit('lock-status', { locked: true, lockHolder: documentLock.lockHolder });
+    }
+});
+socket.on('release-lock', (data) => {
+    if (documentLock.lockHolder === data.userId) {
+        documentLock.locked = false;
+        documentLock.lockHolder = null;
+        // Notify all users that the document is now unlocked
+        io.emit('lock-status', { locked: false, lockHolder: null });
+    }
+});
+
+
 
 
 

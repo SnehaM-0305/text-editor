@@ -158,6 +158,25 @@ socket.on('highlight-text', (highlightData) => {
     selection.removeAllRanges();
     selection.addRange(range);
 });
+//locking algo 
+writingArea.addEventListener('focus', () => {
+    socket.emit('request-lock', { userId: socket.id });
+});
+
+socket.on('lock-status', (data) => {
+    if (data.locked && data.lockHolder !== socket.id) {
+        alert('Another user is editing the document. Please wait...');
+ 
+        writingArea.setAttribute('contenteditable', 'false');
+    } else {
+     
+        writingArea.setAttribute('contenteditable', 'true');
+    }
+});
+writingArea.addEventListener('blur', () => {
+    socket.emit('release-lock', { userId: socket.id });
+});
+
 
 //cursor code------------------------------------------------- 
 // Capture mouse movement events
