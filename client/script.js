@@ -1,311 +1,381 @@
+// import { io } from "https://cdn.socket.io/4.7.5/socket.io.esm.min.js";
+
+// // ⭐️ Connect with autoConnect set to false
+// const socket = io('http://127.0.0.1:5000', { autoConnect: false });
+
+// // --- DOM ELEMENTS ---
+// const mainContainer = document.querySelector('.main-container');
+// const nameOverlay = document.getElementById('name-overlay');
+// const nameInput = document.getElementById('name-input');
+// const nameSubmitBtn = document.getElementById('name-submit-btn');
+// const writingArea = document.getElementById('text-input');
+// const optionsButtons = document.querySelectorAll(".option-button");
+// const advancedOptions = document.querySelectorAll(".adv-option-button");
+// const canvas = document.getElementById('drawing-canvas');
+// const context = canvas.getContext('2d');
+// const penColorInput = document.getElementById('pen-color');
+// const penWidthInput = document.getElementById('pen-width');
+// const clearCanvasBtn = document.getElementById('clear-canvas-btn');
+// const userList = document.getElementById('user-list');
+// const typingIndicator = document.getElementById('typing-indicator');
+// const note = document.getElementById('note');
+
+// // --- INITIAL SETUP ---
+// let lastText = '';
+
+// // ⭐️ This new logic handles the custom modal INSTEAD of the prompt
+// nameSubmitBtn.addEventListener('click', handleJoin);
+// nameInput.addEventListener('keydown', (e) => {
+//     if (e.key === 'Enter') {
+//         handleJoin();
+//     }
+// });
+
+// function handleJoin() {
+//     const userName = nameInput.value.trim();
+//     if (userName) {
+//         // Hide the modal
+//         nameOverlay.classList.remove('visible');
+//         mainContainer.style.filter = 'none';
+
+//         // Set the username in auth and connect to the server
+//         socket.auth = { username: userName };
+//         socket.connect();
+//     } else {
+//         alert("Please enter a name.");
+//     }
+// }
 
 
-let optionsButtons = document.querySelectorAll(".option-button");
-let advancedOptionButton = document.querySelectorAll(".adv-option-button");
-let fontName = document.getElementById("fontName");
-let fontSizeRef = document.getElementById("fontSize");
-let writingArea = document.getElementById("text-input");
-let linkButton = document.getElementById("createLink");
-let alignButtons = document.querySelectorAll(".align");
-let spacingButtons = document.querySelectorAll(".spacing");
-let formatButtons = document.querySelectorAll(".format");
-let scriptButtons = document.querySelectorAll(".script");
+// // Set canvas size
+// function resizeCanvas() {
+//     const dpr = window.devicePixelRatio || 1;
+//     const rect = canvas.getBoundingClientRect();
+//     canvas.width = rect.width * dpr;
+//     canvas.height = rect.height * dpr;
+//     context.scale(dpr, dpr);
+// }
+// window.addEventListener('load', resizeCanvas);
+// window.addEventListener('resize', resizeCanvas);
+
+
+// // =================================================================
+// // SECTION 1: RICH TEXT EDITOR LOGIC
+// // =================================================================
+// const modifyText = (command, defaultUi, value) => {
+//     document.execCommand(command, defaultUi, value);
+// };
+// optionsButtons.forEach(button => {
+//     button.addEventListener("click", () => modifyText(button.id, false, null));
+// });
+// advancedOptions.forEach(button => {
+//     button.addEventListener("change", () => modifyText(button.id, false, button.value));
+// });
+// document.getElementById("createLink").addEventListener("click", () => {
+//     let userLink = prompt("Enter a URL");
+//     if (userLink) modifyText("createLink", false, userLink);
+// });
+// writingArea.addEventListener('input', () => {
+//     const currentText = writingArea.innerHTML;
+//     if (currentText !== lastText) {
+//         socket.emit('text-edited', currentText);
+//         socket.emit('typing');
+//         lastText = currentText;
+//     }
+// });
+// socket.on('receive-changes', (text) => {
+//     if (writingArea.innerHTML !== text) {
+//         writingArea.innerHTML = text;
+//         lastText = text;
+//     }
+// });
+
+
+// // =================================================================
+// // SECTION 2: DRAWING CANVAS LOGIC
+// // =================================================================
+// let isDrawing = false;
+// let lastX = 0;
+// let lastY = 0;
+// function getMousePos(canvas, evt) {
+//     const rect = canvas.getBoundingClientRect();
+//     return {
+//       x: evt.clientX - rect.left,
+//       y: evt.clientY - rect.top
+//     };
+// }
+// function drawLine(x0, y0, x1, y1, color, width, emit = false) {
+//     context.beginPath();
+//     context.moveTo(x0, y0);
+//     context.lineTo(x1, y1);
+//     context.strokeStyle = color;
+//     context.lineWidth = width;
+//     context.lineCap = 'round';
+//     context.stroke();
+//     context.closePath();
+//     if (!emit) return;
+//     socket.emit('drawing', { x0, y0, x1, y1, color, width });
+// }
+// canvas.addEventListener('mousedown', (e) => {
+//     isDrawing = true;
+//     const pos = getMousePos(canvas, e);
+//     [lastX, lastY] = [pos.x, pos.y];
+// });
+// canvas.addEventListener('mousemove', (e) => {
+//     if (!isDrawing) return;
+//     const pos = getMousePos(canvas, e);
+//     drawLine(lastX, lastY, pos.x, pos.y, penColorInput.value, penWidthInput.value, true);
+//     [lastX, lastY] = [pos.x, pos.y];
+// });
+// canvas.addEventListener('mouseup', () => isDrawing = false);
+// canvas.addEventListener('mouseout', () => isDrawing = false);
+// clearCanvasBtn.addEventListener('click', () => {
+//     context.clearRect(0, 0, canvas.width, canvas.height);
+//     socket.emit('clear-canvas');
+// });
+// socket.on('drawing', (data) => {
+//     drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.width);
+// });
+// socket.on('clear-canvas', () => {
+//     context.clearRect(0, 0, canvas.width, canvas.height);
+// });
+
+
+// // =================================================================
+// // SECTION 3: GENERAL COLLABORATION FEATURES
+// // =================================================================
+// let typingTimeout = null;
+// socket.on('user-typing', (name) => {
+//     typingIndicator.textContent = `${name} is typing...`;
+//     clearTimeout(typingTimeout);
+//     typingTimeout = setTimeout(() => typingIndicator.textContent = '', 2000);
+// });
+// function updateUserList(users) {
+//     userList.innerHTML = '';
+//     for (const id in users) {
+//         const name = users[id];
+//         const userItem = document.createElement('div');
+//         userItem.textContent = name;
+//         if (id === socket.id) {
+//             userItem.style.fontWeight = 'bold';
+//             userItem.textContent += ' (You)';
+//         }
+//         userList.appendChild(userItem);
+//     }
+// }
+// socket.on('update-user-list', (users) => updateUserList(users));
+// function displayMessage(message, color = '0,255,0') {
+//     const msgDiv = document.createElement('div');
+//     msgDiv.style.backgroundColor = `rgba(${color}, 0.5)`;
+//     msgDiv.textContent = message;
+//     note.appendChild(msgDiv);
+//     setTimeout(() => msgDiv.remove(), 3000);
+// }
+// socket.on('user-connected', (name) => displayMessage(`${name} connected`));
+// socket.on('user-disconnected', (name) => displayMessage(`${name} disconnected`, '255,0,0'));
+
+import { io } from "https://cdn.socket.io/4.7.5/socket.io.esm.min.js";
+
+// ⭐️ Connect with autoConnect set to false
+const socket = io('http://127.0.0.1:5000', { autoConnect: false });
+
+// --- DOM ELEMENTS ---
+const mainContainer = document.querySelector('.main-container');
+const nameOverlay = document.getElementById('name-overlay');
+const nameInput = document.getElementById('name-input');
+const nameSubmitBtn = document.getElementById('name-submit-btn');
+const writingArea = document.getElementById('text-input');
+const optionsButtons = document.querySelectorAll(".option-button");
+const advancedOptions = document.querySelectorAll(".adv-option-button");
+const canvas = document.getElementById('drawing-canvas');
+const context = canvas.getContext('2d');
+const penColorInput = document.getElementById('pen-color');
+const penWidthInput = document.getElementById('pen-width');
+const clearCanvasBtn = document.getElementById('clear-canvas-btn');
 const userList = document.getElementById('user-list');
-let socket = io.connect('http://localhost:5000');
+const typingIndicator = document.getElementById('typing-indicator');
+const note = document.getElementById('note');
 
-socket.on('disconnect', () => {
+// --- INITIAL SETUP ---
+let lastText = '';
 
-    userList.removeChild(userList.lastChild);
-});
-
-
-
-   
-writingArea.addEventListener('keyup', (e) => {
-    let text = e.target.innerHTML;
-    socket.emit('text-edited', text);
-});
-
-socket.on('user-typing', (userName) => {
-
-     displayTypingIndicator(userName);
- });
- function displayTypingIndicator(userName) {
-     const typingIndicator = document.getElementById('typing-indicator');
-    
-     
-        const textContainer = document.createElement('div');
-       
-        textContainer.textContent = `${userName} is typing...`;
-        textContainer.classList.add('text-container');
-        
-       typingIndicator.appendChild(textContainer);
-    
-        
+// This new logic handles the custom modal INSTEAD of the prompt
+nameSubmitBtn.addEventListener('click', handleJoin);
+nameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        handleJoin();
     }
-    
- 
-socket.on('receive-changes', (text) => {
-    writingArea.innerHTML = text;
 });
 
+function handleJoin() {
+    const userName = nameInput.value.trim();
+    if (userName) {
+        // Hide the modal
+        nameOverlay.classList.remove('visible');
+        mainContainer.style.filter = 'none';
 
-function updateUserList(users) {
-
-    const userList = document.getElementById('user-list');
-
-
-    userList.innerHTML = '';
-    let userItem = "example";
-
-    users.forEach(user => {
-        const userItem = document.createElement('div');
-        userItem.style.marginBottom ="9px";
-        userItem.textContent = user;
-        userList.appendChild(userItem);
-    });
-}
-writingArea.addEventListener('input', () => {
-    const text = writingArea.innerHTML;
-    socket.emit('text-edited', text);
-});
-
-
-socket.on('update-user-list', (users) => {
-
-
-    updateUserList(users);
-});
-
-writingArea.addEventListener('input', () => {
-    socket.emit('typing');
-});
-
-
-// Socket event listener for updating user list with active users
-socket.on('update-user-list-with-indicator', (users) => {
-    updateUserListWithIndicator(users);
-});
-
-
-// Clear typing indicator when user stops typing
-writingArea.addEventListener('keyup', () => {
-    clearTypingIndicator();
-});
-
-function clearTypingIndicator() {
-    const typingIndicator = document.getElementById('typing-indicator');
-    typingIndicator.textContent = '';
-}
-
-
-// Function to display connection or disconnection message
-function displayMessage(message, color , opacity) {
-    const messageContainer = document.createElement('div');
- 
-    messageContainer.style.backgroundColor = `rgba(${color}, ${opacity})`;
-   
-    messageContainer.textContent = message;
-    messageContainer.classList.add('message-container');
-  
-    const topMessageContainer = document.getElementById('note'); 
-   
-    topMessageContainer.appendChild(messageContainer);
-
-    // Remove the message after 5 seconds
-    setTimeout(() => {
-        messageContainer.remove();
-    }, 2000);
-}
-
-// Socket event listener for user connection
-socket.on('user-connected', (user) => {
-    displayMessage(`${user} connected`, '0,255,0' , '0.5');
-});
-
-// Socket event listener for user disconnection
-socket.on('user-disconnected', (user) => {
-    displayMessage(`${user} disconnected`, '255,0,0' , '0.5');
-});
-
-// Function to handle text highlighting and emit the selected text range
-const handleTextHighlight = () => {
-    let selection = window.getSelection();
-    let selectedText = selection.toString();
-    let selectionRange = selection.getRangeAt(0);
-    
-    let startIndex = selectionRange.startOffset;
-    let endIndex = startIndex + selectedText.length;
-    
-    socket.emit('highlight-text', { startIndex, endIndex });
-};
-
-// Event listener for text highlighting and broadcasting to other users
-writingArea.addEventListener('mouseup', () => {
-    handleTextHighlight();
-});
-
-// Socket event listener to receive and apply text highlighting from other users
-socket.on('highlight-text', (highlightData) => {
-    const { startIndex, endIndex } = highlightData;
-    
-    const selection = window.getSelection();
-    const range = document.createRange();
-    
-    range.setStart(writingArea.childNodes[0], startIndex);
-    range.setEnd(writingArea.childNodes[0], endIndex);
-    
-    selection.removeAllRanges();
-    selection.addRange(range);
-});
-//locking algo 
-writingArea.addEventListener('focus', () => {
-    socket.emit('request-lock', { userId: socket.id });
-});
-
-socket.on('lock-status', (data) => {
-    if (data.locked && data.lockHolder !== socket.id) {
-        alert('Another user is editing the document. Please wait...');
- 
-        writingArea.setAttribute('contenteditable', 'false');
+        // Set the username in auth and connect to the server
+        socket.auth = { username: userName };
+        socket.connect();
     } else {
-     
-        writingArea.setAttribute('contenteditable', 'true');
+        alert("Please enter a name.");
     }
-});
-writingArea.addEventListener('blur', () => {
-    socket.emit('release-lock', { userId: socket.id });
-});
-
-
-//cursor code------------------------------------------------- 
-// Capture mouse movement events
-document.addEventListener('mousemove', (event) => {
-    const { clientX, clientY } = event;
-    // Emit mouse movement data to the server
-    socket.emit('mouse-move', { clientX, clientY });
-});
-
-// Handle mouse movement data received from the server
-socket.on('mouse-move', (data) => {
-   
-    updateCursorPosition(data.clientX, data.clientY);
-});
-
-// Function to update cursor position
-function updateCursorPosition(clientX, clientY) {
-   
-    const cursorElement = document.getElementById('shared-cursor');
-    cursorElement.style.left = clientX + 'px';
-    cursorElement.style.top = clientY + 'px';
 }
 
 
-//-----------------------------------------------------------
+// Set canvas size
+function resizeCanvas() {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    context.scale(dpr, dpr);
+}
+window.addEventListener('load', resizeCanvas);
+window.addEventListener('resize', resizeCanvas);
 
-//List of fontlist
-let fontList = [
-    "Arial",
-    "Verdana",
-    "Times New Roman",
-    "Garamond",
-    "Georgia",
-    "Courier New",
-    "cursive",
-];
 
-//Initial Settings
-const initializer = () => {
-    //function calls for highlighting buttons
-    //No highlights for link, unlink,lists, undo,redo since they are one time operations
-    highlighter(alignButtons, true);
-    highlighter(spacingButtons, true);
-    highlighter(formatButtons, false);
-    highlighter(scriptButtons, true);
-
-    //create options for font names
-    fontList.map((value) => {
-        let option = document.createElement("option");
-        option.value = value;
-        option.innerHTML = value;
-        fontName.appendChild(option);
-    });
-
-    //fontSize allows only till 7
-    for (let i = 1; i <= 7; i++) {
-        let option = document.createElement("option");
-        option.value = i;
-        option.innerHTML = i;
-        fontSizeRef.appendChild(option);
-    }
-
-    //default size
-    fontSizeRef.value = 3;
-};
-
-//main logic
+// =================================================================
+// SECTION 1: RICH TEXT EDITOR LOGIC
+// =================================================================
 const modifyText = (command, defaultUi, value) => {
-    //execCommand executes command on selected text
     document.execCommand(command, defaultUi, value);
 };
-
-//For basic operations which don't need value parameter
-optionsButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-        modifyText(button.id, false, null);
-    });
+optionsButtons.forEach(button => {
+    button.addEventListener("click", () => modifyText(button.id, false, null));
 });
-
-//options that require value parameter (e.g colors, fonts)
-advancedOptionButton.forEach((button) => {
-    button.addEventListener("change", () => {
-        modifyText(button.id, false, button.value);
-    });
+advancedOptions.forEach(button => {
+    button.addEventListener("change", () => modifyText(button.id, false, button.value));
 });
-
-//link
-linkButton.addEventListener("click", () => {
+document.getElementById("createLink").addEventListener("click", () => {
     let userLink = prompt("Enter a URL");
-    //if link has http then pass directly else add https
-    if (/http/i.test(userLink)) {
-        modifyText(linkButton.id, false, userLink);
-    } else {
-        userLink = "http://" + userLink;
-        modifyText(linkButton.id, false, userLink);
+    if (userLink) modifyText("createLink", false, userLink);
+});
+writingArea.addEventListener('input', () => {
+    const currentText = writingArea.innerHTML;
+    if (currentText !== lastText) {
+        socket.emit('text-edited', currentText);
+        socket.emit('typing');
+        lastText = currentText;
+    }
+});
+socket.on('receive-changes', (text) => {
+    if (writingArea.innerHTML !== text) {
+        writingArea.innerHTML = text;
+        lastText = text;
     }
 });
 
-//Highlight clicked button
-const highlighter = (className, needsRemoval) => {
-    className.forEach((button) => {
-        button.addEventListener("click", () => {
-            //needsRemoval = true means only one button should be highlight and other would be normal
-            if (needsRemoval) {
-                let alreadyActive = false;
 
-                //If currently clicked button is already active
-                if (button.classList.contains("active")) {
-                    alreadyActive = true;
-                }
+// =================================================================
+// SECTION 2: DRAWING CANVAS LOGIC
+// =================================================================
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+function getMousePos(canvas, evt) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: evt.clientX - rect.left,
+      y: evt.clientY - rect.top
+    };
+}
+function drawLine(x0, y0, x1, y1, color, width, emit = false) {
+    context.beginPath();
+    context.moveTo(x0, y0);
+    context.lineTo(x1, y1);
+    context.strokeStyle = color;
+    context.lineWidth = width;
+    context.lineCap = 'round';
+    context.stroke();
+    context.closePath();
+    if (!emit) return;
+    socket.emit('drawing', { x0, y0, x1, y1, color, width });
+}
+canvas.addEventListener('mousedown', (e) => {
+    isDrawing = true;
+    const pos = getMousePos(canvas, e);
+    [lastX, lastY] = [pos.x, pos.y];
+});
+canvas.addEventListener('mousemove', (e) => {
+    if (!isDrawing) return;
+    const pos = getMousePos(canvas, e);
+    drawLine(lastX, lastY, pos.x, pos.y, penColorInput.value, penWidthInput.value, true);
+    [lastX, lastY] = [pos.x, pos.y];
+});
+canvas.addEventListener('mouseup', () => isDrawing = false);
+canvas.addEventListener('mouseout', () => isDrawing = false);
+clearCanvasBtn.addEventListener('click', () => {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    socket.emit('clear-canvas');
+});
+socket.on('drawing', (data) => {
+    drawLine(data.x0, data.y0, data.x1, data.y1, data.color, data.width);
+});
+socket.on('clear-canvas', () => {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+});
 
-                //Remove highlight from other buttons
-                highlighterRemover(className);
-                if (!alreadyActive) {
-                    //highlight clicked button
-                    button.classList.add("active");
-                }
-            } else {
-                //if other buttons can be highlighted
-                button.classList.toggle("active");
-            }
-        });
-    });
-};
 
-const highlighterRemover = (className) => {
-    className.forEach((button) => {
-        button.classList.remove("active");
-    });
-};
+// =================================================================
+// SECTION 3: GENERAL COLLABORATION FEATURES
+// =================================================================
+let typingTimeout = null;
+socket.on('user-typing', (name) => {
+    typingIndicator.textContent = `${name} is typing...`;
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => typingIndicator.textContent = '', 2000);
+});
+function updateUserList(users) {
+    userList.innerHTML = '';
+    for (const id in users) {
+        const name = users[id];
+        const userItem = document.createElement('div');
+        userItem.textContent = name;
+        if (id === socket.id) {
+            userItem.style.fontWeight = 'bold';
+            userItem.textContent += ' (You)';
+        }
+        userList.appendChild(userItem);
+    }
+}
+socket.on('update-user-list', (users) => updateUserList(users));
 
-window.onload = initializer();
+function displayMessage(message, color = '0,255,0') {
+    const msgDiv = document.createElement('div');
+    msgDiv.style.backgroundColor = `rgba(${color}, 0.5)`;
+    msgDiv.textContent = message;
+    note.appendChild(msgDiv);
+    setTimeout(() => msgDiv.remove(), 3000);
+}
+
+// ⭐️ ADDED: Cursor Tracking with Names
+document.addEventListener('mousemove', (e) => {
+    socket.emit('mouse-move', { x: e.pageX, y: e.pageY });
+});
+
+socket.on('mouse-move', ({ x, y, userId, username }) => {
+    if (userId === socket.id) return; // Don't show your own cursor
+
+    let cursor = document.getElementById(`cursor-${userId}`);
+    if (!cursor) {
+        cursor = document.createElement('div');
+        cursor.id = `cursor-${userId}`;
+        cursor.className = 'cursor';
+        // Create the cursor with a pointer icon (SVG) and a name label
+        cursor.innerHTML = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5.5 4.5L18.5 11.5L11.5 14.5L8.5 21.5L5.5 4.5Z" fill="#ffcc00" stroke="#000000" stroke-width="1" stroke-linejoin="round"/>
+            </svg>
+            <span class="cursor-name">${username}</span>
+        `;
+        document.body.appendChild(cursor);
+    }
+    // Update the cursor's position
+    cursor.style.left = x + 'px';
+    cursor.style.top = y + 'px';
+});
+
+
+socket.on('user-connected', (name) => displayMessage(`${name} connected`));
+socket.on('user-disconnected', (name) => displayMessage(`${name} disconnected`, '255,0,0'));
